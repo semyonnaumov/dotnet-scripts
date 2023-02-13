@@ -67,6 +67,19 @@ docker compose up -d
 
 После этого можно запускать приложение.
 
+Можно запускать приложение в Docker-контейнере. Для этого нужно собрать образ приложения:
+```bash
+docker build -t dotnet-scripts-scheduler:latest .
+```
+
+И запустить из него контейнер, подключив к сети из docker-compose:
+```bash
+docker run --name dotnet-scripts-scheduler \
+    --network=dotnet-scripts-scheduler_default -it --rm \
+    -e SCHEDULER_POSTGRES_URL=postgres:5432 \
+    dotnet-scripts-scheduler:latest
+```
+
 Примеры запросов к приложению:
 
 1. Отправка скрипта на выполнение:
@@ -166,7 +179,7 @@ Dockerfile воркера позволяет собрать его в образ
 
 Приложение можно запускать как отдельно от **dotnet-scripts-worker**, так и совместно. Для отдельного запуска достаточно поднять набор контейнеров из локального `docker-compose.yaml`. Для совместного запуска должна быть поднята обвязка из `docker-compose.yaml` сервиса **dotnet-scripts-scheduler** (при этом локальный `docker-compose.yaml` не должен быть запущен). Запускать приложение следует, указав в переменной окружения `WORKER_JOB_FILES_HOST_DIT` директорию, которую приложение будет использовать для создания временных файлов. По умолчанию это `/tmp/scripts`.
 
-Можно запускать приложение в контейнере в режиме DinD. Для этого нужно собрать образ приложения:
+Можно запускать приложение в Docker-контейнере в режиме DinD. Для этого нужно собрать образ приложения:
 ```bash
 docker build -t dotnet-scripts-worker:dind .
 ```
