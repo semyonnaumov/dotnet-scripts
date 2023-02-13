@@ -23,7 +23,7 @@ Service for running С# scripts in an isolated environment. Currently only descr
 
 ## 2. Дизайн
 
-Сервис представляет собой два приложения - **dotnet-scripts-scheduler** и **dotnet-scripts-worker**, общающиеся между собой через Kafka. **dotnet-scripts-scheduler** имеет RESTful API для общения с клиентом**, dotnet-scripts-worker** отвечает непосредственно за запуск задач. Схематично это выглядит так:
+Сервис представляет собой два приложения - **dotnet-scripts-scheduler** и **dotnet-scripts-worker**, общающиеся между собой через Kafka. **dotnet-scripts-scheduler** имеет RESTful API для общения с клиентом, **dotnet-scripts-worker** отвечает непосредственно за запуск задач. Схематично это выглядит так:
 
 ![Untitled](dotnet-scripts-schema.png)
 
@@ -39,7 +39,7 @@ Service for running С# scripts in an isolated environment. Currently only descr
 
 | Эндпойнт | Описание |
 | --- | --- |
-| GET /actuator/health | Проверка состояние приложения |
+| GET /actuator/health | Проверка состояния приложения |
 | GET /swagger-ui | Swagger UI с описанием API |
 | GET /api-docs | Swagger JSON |
 | GET /api-docs.yaml | Swagger YAML |
@@ -117,7 +117,9 @@ docker compose up -d
 
 ```bash
 docker exec -it dss-kafka-broker-1 sh
+```
 
+```bash
 kafka-console-consumer --bootstrap-server localhost:9092 \
 	--topic pending-linux-amd64-dotnet-7 --from-beginning --group console
 ```
@@ -125,20 +127,16 @@ kafka-console-consumer --bootstrap-server localhost:9092 \
 Чтобы отправлять сообщения приложению можно подключиться к топикам `running` или `finished`:
 
 ```bash
-docker exec -it dss-kafka-broker-1 sh
-
 kafka-console-producer --bootstrap-server localhost:9092 \
 	--topic running --property "parse.key=true" --property "key.separator=:"
 ```
 
 ```bash
-docker exec -it dss-kafka-broker-1 sh
-
 kafka-console-producer --bootstrap-server localhost:9092 \
 	--topic finished --property "parse.key=true" --property "key.separator=:"
 ```
 
-В качестве ключа для отправки можно использовать что угодно, ключ не читается приложением (воркер использует идентификатор джобы). Структура сообщений определяется DTO-классами пакета `com.naumov.dotnetscriptsscheduler.dto.kafka`. Примеры сообщений:
+В качестве ключа для отправки можно использовать что угодно, ключ не читается приложением (воркер использует идентификатор джобы в качестве ключа, когда отправляет сообщения). Структура сообщений определяется DTO-классами пакета `com.naumov.dotnetscriptsscheduler.dto.kafka`. Примеры сообщений:
 
 В `running`:
 
@@ -153,7 +151,7 @@ key1:{"jobId": "7f000001-863c-11c6-8186-3cc292d00000","status": "REJECTED"}
 ```
 
 ```bash
-key1:{"jobId": "7f000001-863c-17b2-8186-3cdeb62e0000","status": "ACCEPTED", "scriptResults": {"finishedWith": "TIME_LIMIT_EXCEEDED", "stdout": "some stdout", "stderr": "some stderr"}}
+key1:{"jobId": "7f000001-863c-11c6-8186-3cc292d00000","status": "ACCEPTED", "scriptResults": {"finishedWith": "TIME_LIMIT_EXCEEDED", "stdout": "some stdout", "stderr": "some stderr"}}
 ```
 
 ### 3.2 dotnet-scripts-worker
@@ -162,11 +160,11 @@ key1:{"jobId": "7f000001-863c-17b2-8186-3cdeb62e0000","status": "ACCEPTED", "scr
 
 Воркер читает задачи на запуск из топика, соответствующего его ОС и платформе, сообщает в `running` о запущенных задачах и по завершению (успешному или с ошибкой) скрипта отправляет в топик `finished` результаты запусков.
 
-Dockerfile воркера позволяет собрать его в образ с докером-внутри докера (DinD) для запуска контейнеров со скриптами. Для включения и выключения режима контроля ресурсов контейнера со скриптом приложение использует переменную окружения `WORKER_ENABLE_RESOURCE_LIMITS` (`true` по умолчанию). Пока что при запуске в режиме DinD в приложении нельзя ограничивать ресурсы контейнера, и оно будет корректно работать только с `WORKER_ENABLE_RESOURCE_LIMITS=false`.
+Dockerfile воркера позволяет собрать его в образ с докером-внутри-докера (DinD) для запуска контейнеров со скриптами. Для включения и выключения режима контроля ресурсов контейнера со скриптом приложение использует переменную окружения `WORKER_ENABLE_RESOURCE_LIMITS` (`true` по умолчанию). Пока что при запуске в режиме DinD в приложении нельзя ограничивать ресурсы контейнера, и оно будет корректно работать только с `WORKER_ENABLE_RESOURCE_LIMITS=false`.
 
 **Запуск dotnet-scripts-worker**
 
-Приложение можно запускать как отдельно от **dotnet-scripts-worker**, так и совместно**.** Для отдельного запуска достаточно поднять набор контейнеров из локального `docker-compose.yaml`. Для совместного запуска должна быть поднята обвязка из `docker-compose.yaml` сервиса **dotnet-scripts-scheduler**. Запускать приложение следует, указав в переменной окружения `WORKER_JOB_FILES_HOST_DIT` директорию, которую приложение будет использовать для создания временных файлов. По умолчанию это `/tmp/scripts`.
+Приложение можно запускать как отдельно от **dotnet-scripts-worker**, так и совместно. Для отдельного запуска достаточно поднять набор контейнеров из локального `docker-compose.yaml`. Для совместного запуска должна быть поднята обвязка из `docker-compose.yaml` сервиса **dotnet-scripts-scheduler** (при этом локальный `docker-compose.yaml` не должен быть запущен). Запускать приложение следует, указав в переменной окружения `WORKER_JOB_FILES_HOST_DIT` директорию, которую приложение будет использовать для создания временных файлов. По умолчанию это `/tmp/scripts`.
 
 Для того, чтобы посмотреть сообщения, отправляемые воркером, нужно подключиться к контейнеру с брокером кафки и запустить в нем консьюмеры для топиков `running` и  `finished` с консьюмер-группой `console`:
 
