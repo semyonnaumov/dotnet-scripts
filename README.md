@@ -223,9 +223,11 @@ kafka-console-producer --bootstrap-server localhost:9092 \
 key1:{"jobId": "7f000001-863c-17b2-8186-3cdeb62e0000","script": "Console.WriteLine(\"Hello from script\");","jobConfig": {"nugetConfigXml": "<?xml version=\"1.0\" encoding=\"utf-8\"?><configuration><packageSources><add key=\"NuGet official package source\" value=\"https://nuget.org/api/v2/\" /></packageSources><activePackageSource><add key=\"All\" value=\"(Aggregate source)\" /></activePackageSource></configuration>"}}
 ```
 
-## 4. Атомарный с помощью docker compose
+## 4. Запуск всего сервиса с помощью docker compose
 
 Приложение можно запустить, используя docker-compose.yaml в корне репозитория:
 ```bash
 docker compose up -d
 ```
+
+После этого сервис будет доступен на `localhost:8080` (например, Swagger UI: http://localhost:8080/swagger-ui)
