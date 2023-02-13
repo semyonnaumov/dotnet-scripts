@@ -166,6 +166,20 @@ Dockerfile воркера позволяет собрать его в образ
 
 Приложение можно запускать как отдельно от **dotnet-scripts-worker**, так и совместно. Для отдельного запуска достаточно поднять набор контейнеров из локального `docker-compose.yaml`. Для совместного запуска должна быть поднята обвязка из `docker-compose.yaml` сервиса **dotnet-scripts-scheduler** (при этом локальный `docker-compose.yaml` не должен быть запущен). Запускать приложение следует, указав в переменной окружения `WORKER_JOB_FILES_HOST_DIT` директорию, которую приложение будет использовать для создания временных файлов. По умолчанию это `/tmp/scripts`.
 
+Для запуска в приложения контенере нужно собрать его:
+```bash
+docker build -t dotnet-scripts-worker:dind .
+```
+
+И запустить контейнер с флагом `--privileged` и подключить к сети из docker-compose планировщика:
+```bash
+docker run --privileged --name dotnet-scripts-worker \
+    --network=dotnet-scripts-scheduler_default -it --rm \
+    -e WORKER_KAFKA_BROKER_URL=kafka-broker-1:9092 \
+    -e WORKER_ENABLE_RESOURCE_LIMITS=false \
+    dotnet-scripts-worker:dind
+```
+
 Для того, чтобы посмотреть сообщения, отправляемые воркером, нужно подключиться к контейнеру с брокером кафки и запустить в нем консьюмеры для топиков `running` и  `finished` с консьюмер-группой `console`:
 
 ```bash
