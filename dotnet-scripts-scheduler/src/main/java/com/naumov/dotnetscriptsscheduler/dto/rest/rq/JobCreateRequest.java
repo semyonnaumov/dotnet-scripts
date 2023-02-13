@@ -10,7 +10,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Valid
 public final class JobCreateRequest {
     @NotBlank
     private String requestId;

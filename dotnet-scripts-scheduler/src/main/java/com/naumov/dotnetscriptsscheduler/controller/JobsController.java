@@ -94,10 +94,7 @@ public class JobsController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteJob(@NotNull @PathVariable("id") UUID jobId) {
         LOGGER.info("Received job deletion request for job {}", jobId);
-
-        if (jobService.deleteJob(jobId)) {
-            return ResponseEntity.status(HttpStatus.OK).build();
-        }
+        if (jobService.deleteJob(jobId)) return ResponseEntity.status(HttpStatus.OK).build();
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }

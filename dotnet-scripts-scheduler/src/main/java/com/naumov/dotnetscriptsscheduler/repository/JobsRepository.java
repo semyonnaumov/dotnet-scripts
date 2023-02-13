@@ -37,8 +37,8 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
     @Query("SELECT j.result FROM Job j LEFT JOIN j.result WHERE j.id = :id")
     Optional<JobResult> findJobResultByJobId(UUID id);
 
-    @Modifying
     @Query("UPDATE Job j SET j.status = :status WHERE j.id = :id")
+    @Modifying
     void updateJobSetStatusTo(UUID id, JobStatus status);
 
     @Query("UPDATE Job j SET j.status = com.naumov.dotnetscriptsscheduler.model.JobStatus.REJECTED, j.result = null " +

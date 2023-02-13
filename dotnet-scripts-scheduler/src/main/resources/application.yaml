@@ -58,7 +58,3 @@ springdoc:
     path: /swagger-ui
   api-docs:
     path: /api-docs
-
-logging:
-  level:
-    com.naumov.dotnetscriptsscheduler: debug

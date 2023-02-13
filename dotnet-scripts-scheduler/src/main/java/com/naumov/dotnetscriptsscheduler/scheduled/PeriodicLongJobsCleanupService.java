@@ -27,12 +27,17 @@ public class PeriodicLongJobsCleanupService {
             fixedDelayString = "${scheduler.jobs.rejected-update-period-ms}"
     )
     public void scheduleFixedRateWithInitialDelayTask() {
-        int updatedJobsNumber = jobService.rejectLongLastingJobs(jobTimeoutMs);
-        if (updatedJobsNumber > 0) {
-            LOGGER.info("Periodic long jobs cleanup: set {} number of jobs to {} status",
-                    updatedJobsNumber, JobStatus.REJECTED);
-        } else {
-            LOGGER.info("Periodic long jobs cleanup: no long lasting jobs found");
+        try {
+            int updatedJobsNumber = jobService.rejectLongLastingJobs(jobTimeoutMs);
+            if (updatedJobsNumber > 0) {
+                LOGGER.info("Periodic long jobs cleanup: set {} number of jobs to {} status",
+                        updatedJobsNumber, JobStatus.REJECTED);
+            } else {
+                LOGGER.info("Periodic long jobs cleanup: no long lasting jobs found");
+            }
+        } catch (RuntimeException e) {
+            LOGGER.warn("Failed to perform periodic long jobs cleanup", e);
+            throw e;
         }
     }
 }
