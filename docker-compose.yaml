@@ -1,0 +1,94 @@
+version: '3.5'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    container_name: ds-zookeeper
+    networks:
+      - ds-network
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka-broker-1:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: ds-kafka-broker-1
+    networks:
+      - ds-network
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://localhost:8097,INTERNAL://kafka-broker-1:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+
+  kafka-broker-2:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: ds-kafka-broker-2
+    networks:
+      - ds-network
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://localhost:8098,INTERNAL://kafka-broker-2:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+
+  postgres:
+    container_name: ds-postgres
+    image: postgres:15.2
+    networks:
+      - ds-network
+    environment:
+      POSTGRES_USER: dotnet-scripts-scheduler
+      POSTGRES_PASSWORD: 1234
+      PGDATA: /data/postgres
+    volumes:
+      - ds-postgres:/data/postgres
+    restart: unless-stopped
+
+  scheduler:
+    container_name: ds-scheduler
+    image: semyonnaumov/dotnet-scripts-scheduler:latest
+    ports:
+      - "8080:8080"
+    networks:
+      - ds-network
+    environment:
+      SCHEDULER_KAFKA_BROKER_URL: kafka-broker-1:9092
+      SCHEDULER_POSTGRES_URL: postgres:5432
+    depends_on:
+      - postgres
+      - kafka-broker-1
+      - kafka-broker-2
+
+  worker:
+    container_name: ds-worker
+    image: semyonnaumov/dotnet-scripts-worker:dind
+    privileged: true
+    networks:
+      - ds-network
+    environment:
+      WORKER_KAFKA_BROKER_URL: kafka-broker-1:9092
+      WORKER_ENABLE_RESOURCE_LIMITS: false
+    depends_on:
+      - scheduler
+
+networks:
+  ds-network:
+    driver: bridge
+
+volumes:
+  ds-postgres:

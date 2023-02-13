@@ -35,7 +35,7 @@ Service for running С# scripts in an isolated environment. Currently only descr
 
 Стандартный флоу работы с задачей: получение задачи от клиента, создание записи о задаче в БД, отправка задачи в соответствующий типу worker-а топик Kafka (`pending-${worker-type}`). Параллельно происходит сбор информации из топиков `running` и `finished` с последующим обновлением данных о запусках в БД, а так же удаление полученных клиентом или невостребованных результатов запусков в соответствии с определенными политиками.
 
-**Служебный API:**
+#### Служебный API:
 
 | Эндпойнт | Описание |
 | --- | --- |
@@ -44,7 +44,7 @@ Service for running С# scripts in an isolated environment. Currently only descr
 | GET /api-docs | Swagger JSON |
 | GET /api-docs.yaml | Swagger YAML |
 
-**Прикладной API:**
+#### Прикладной API:
 
 | Эндпойнт | Описание |
 | --- | --- |
@@ -57,7 +57,7 @@ Service for running С# scripts in an isolated environment. Currently only descr
 
 Детальное описание прикладного API можно посмотреть в Swagger UI: [http://localhost:8080/swagger-ui](http://localhost:8080/swagger-ui)
 
-**Запуск dotnet-scripts-scheduler**
+#### Запуск dotnet-scripts-scheduler
 
 Для запуска необходимо сначала поднять обвязку с кафкой и базой данных при помощи docker compose:
 
@@ -173,7 +173,7 @@ key1:{"jobId": "7f000001-863c-11c6-8186-3cc292d00000","status": "ACCEPTED", "scr
 
 Dockerfile воркера позволяет собрать его в образ с докером-внутри-докера (DinD) для запуска контейнеров со скриптами. Для включения и выключения режима контроля ресурсов контейнера со скриптом приложение использует переменную окружения `WORKER_ENABLE_RESOURCE_LIMITS` (`true` по умолчанию). Пока что при запуске в режиме DinD в приложении нельзя ограничивать ресурсы контейнера, и оно будет корректно работать только с `WORKER_ENABLE_RESOURCE_LIMITS=false`.
 
-**Запуск dotnet-scripts-worker**
+#### Запуск dotnet-scripts-worker
 
 Приложение можно запускать как отдельно от **dotnet-scripts-worker**, так и совместно. Для отдельного запуска достаточно поднять набор контейнеров из локального `docker-compose.yaml`. Для совместного запуска должна быть поднята обвязка из `docker-compose.yaml` сервиса **dotnet-scripts-scheduler** (при этом локальный `docker-compose.yaml` не должен быть запущен). Запускать приложение следует, указав в переменной окружения `WORKER_JOB_FILES_HOST_DIT` директорию, которую приложение будет использовать для создания временных файлов. По умолчанию это `/tmp/scripts`. 
 
@@ -221,4 +221,11 @@ kafka-console-producer --bootstrap-server localhost:9092 \
 
 ```bash
 key1:{"jobId": "7f000001-863c-17b2-8186-3cdeb62e0000","script": "Console.WriteLine(\"Hello from script\");","jobConfig": {"nugetConfigXml": "<?xml version=\"1.0\" encoding=\"utf-8\"?><configuration><packageSources><add key=\"NuGet official package source\" value=\"https://nuget.org/api/v2/\" /></packageSources><activePackageSource><add key=\"All\" value=\"(Aggregate source)\" /></activePackageSource></configuration>"}}
+```
+
+## 4. Атомарный с помощью docker compose
+
+Приложение можно запустить, используя docker-compose.yaml в корне репозитория:
+```bash
+docker compose up -d
 ```
