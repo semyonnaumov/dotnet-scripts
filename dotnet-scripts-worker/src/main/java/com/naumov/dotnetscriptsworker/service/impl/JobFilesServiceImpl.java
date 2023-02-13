@@ -53,15 +53,15 @@ public class JobFilesServiceImpl implements JobFilesService {
 
     @Override
     public void cleanupJobFiles(UUID jobId) {
-        Path tempDirectoryPath = getJobTempDirectoryPath(jobId);
-        try (Stream<Path> pathStream = Files.walk(tempDirectoryPath)) {
+        Path tempDirPath = getJobTempDirectoryPath(jobId);
+        try (Stream<Path> pathStream = Files.walk(tempDirPath)) {
             List<Path> pathsToDelete = pathStream.sorted(Comparator.reverseOrder()).toList();
             for (Path pathToDelete : pathsToDelete) {
                 Files.deleteIfExists(pathToDelete);
             }
-            LOGGER.info("Removed temp files directory {} for job {}", tempDirectoryPath, jobId);
+            LOGGER.info("Deleted temp files directory {} for job {}", tempDirPath, jobId);
         } catch (IOException e) {
-            LOGGER.error("Failed to cleanup script files for job {}", jobId, e);
+            LOGGER.error("Failed to delete temp files directory {} for job {}", tempDirPath, jobId, e);
             throw new ScriptFilesServiceException("Failed to cleanup script files for job " + jobId, e);
         }
     }

@@ -41,11 +41,11 @@ public class ContainerServiceImpl implements ContainerService {
     @PostConstruct
     public void init() {
         try {
-            LOGGER.info("{} initialization: pulling sandbox image", ContainerServiceImpl.class.getSimpleName());
+            LOGGER.info("Initialization: start pulling sandbox image");
             pullSandboxImage();
-            LOGGER.info("{} initialization: finished pulling sandbox image", ContainerServiceImpl.class.getSimpleName());
+            LOGGER.info("Initialization: finished pulling sandbox image");
         } catch (Exception e) {
-            LOGGER.error("{} initialization: failed pulling sandbox image", ContainerServiceImpl.class.getSimpleName(), e);
+            LOGGER.error("Initialization: failed to pull sandbox image", e);
             throw new ContainerServiceException("Failed to pull", e);
         }
     }
@@ -79,7 +79,7 @@ public class ContainerServiceImpl implements ContainerService {
 
     @Override
     public List<String> getAllContainersIdsWithNamePrefix(String namePrefix) {
-        Objects.requireNonNull(namePrefix, "Parameter namePrefix must not nbe null");
+        Objects.requireNonNull(namePrefix, "Parameter namePrefix must not be null");
         return getAllContainers().stream()
                 .filter(c -> {
                     if (c.getNames() == null) return false;
@@ -120,7 +120,8 @@ public class ContainerServiceImpl implements ContainerService {
                         .withCpuShares(sandboxContainerProperties.getCpuShares())
                         .withPidsLimit(sandboxContainerProperties.getPidsLimit())
                         .withBlkioWeight(sandboxContainerProperties.getBlkioWeight());
-                        // TODO not working: com.github.dockerjava.api.exception.InternalServerErrorException: Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}
+                        // TODO not working: com.github.dockerjava.api.exception.InternalServerErrorException:
+                        //  Status 500: {"message":"--storage-opt is supported only for overlay over xfs with 'pquota' mount option"}
 //                        .withStorageOpt(Collections.singletonMap(STORAGE_OPT_SIZE, sandboxContainerProperties.getStorageSize()))
             }
 
@@ -202,7 +203,7 @@ public class ContainerServiceImpl implements ContainerService {
                     .exec(new ResultCallback.Adapter<Frame>() {
                         @Override
                         public void onNext(Frame item) {
-                            logLines.add(item.toString());
+                            logLines.add(new String(item.getPayload()));
                         }
                     })
                     .awaitCompletion(timeoutMs, TimeUnit.MILLISECONDS);
@@ -212,8 +213,8 @@ public class ContainerServiceImpl implements ContainerService {
 
         } catch (RuntimeException | InterruptedException e) {
             String logsType = isStdout ? "STDOUT" : "STDERR";
-            LOGGER.error("Failed to receive logs ({}) for container {}", logsType, containerId, e);
-            throw new ContainerServiceException("Failed to receive logs ({" + logsType + "}) for container " + containerId, e);
+            LOGGER.error("Failed to receive {} for container {}", logsType, containerId, e);
+            throw new ContainerServiceException("Failed to receive " + logsType + " for container " + containerId, e);
         }
     }
 
@@ -250,7 +251,8 @@ public class ContainerServiceImpl implements ContainerService {
         try {
             dockerClient.close();
         } catch (IOException e) {
-            throw new ContainerServiceException("Failed to close " + dockerClient.getClass().getSimpleName(), e);
+            LOGGER.error("Failed to close {}", this);
+            throw new ContainerServiceException("Failed to close " + this, e);
         }
     }
 }

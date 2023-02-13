@@ -51,18 +51,18 @@ public class JobServiceImpl implements JobService {
     @PostConstruct
     public void init() {
         try {
-            LOGGER.info("{} initialization: starting container environment cleanup",
-                    JobServiceImpl.class.getSimpleName());
             String prefix = sandboxContainerProperties.getNamePrefix();
+            LOGGER.info("Initialization: starting container environment cleanup - " +
+                    "removing all containers with name prefix {}", prefix);
+
             List<String> containers = containerService.getAllContainersIdsWithNamePrefix(prefix);
             for (String containerId : containers) {
                 containerService.removeContainer(containerId, false);
+                LOGGER.info("Initialization: removed container {}", containerId);
             }
-            LOGGER.info("{} initialization: finished container environment cleanup",
-                    JobServiceImpl.class.getSimpleName());
+            LOGGER.info("Initialization: finished container environment cleanup");
         } catch (RuntimeException e) {
-            LOGGER.error("{} initialization: failed container environment cleanup",
-                    JobServiceImpl.class.getSimpleName(), e);
+            LOGGER.error("Initialization: failed container environment cleanup", e);
             throw e;
         }
     }
@@ -75,14 +75,14 @@ public class JobServiceImpl implements JobService {
         try {
             containerizedJob = containerizedJobsPool.tryAllocate(jobId, sandboxProperties.getContainerOperationsTimeoutMs());
             if (containerizedJob.isRequestedMultipleTimes()) {
-                // such job is already running - do nothing (docker-wide deduping)
+                // such job is already running - do nothing (container-environment-wide deduping)
                 LOGGER.info("Skipped running job {}, it is a duplicate", jobId);
                 return;
             }
 
         } catch (ContainerizedJobAllocationException e) {
             // unable to run this job right now - reject
-            LOGGER.warn("Job {} was rejected", jobId, e);
+            LOGGER.warn("Job {} was rejected - failed to allocate container slot from the pool", jobId, e);
             JobResults jobResults = jobResultsBuilder.status(JobResults.Status.REJECTED).build();
 
             jobMessagesProducer.sentJobFinishedMessageAsync(jobResults);
@@ -101,7 +101,6 @@ public class JobServiceImpl implements JobService {
 
             JobResults.ScriptResults scriptResults = getJobContainerResults(jobId, containerId);
             JobResults jobResults = jobResultsBuilder.scriptResults(scriptResults).build();
-
             jobMessagesProducer.sentJobFinishedMessageAsync(jobResults);
         } catch (RuntimeException e) {
             LOGGER.error("Failed to run job {}", jobId, e);
@@ -128,6 +127,7 @@ public class JobServiceImpl implements JobService {
 
             return containerId;
         } catch (RuntimeException e) {
+            LOGGER.info("Failed to create and start container {} for job {}", containerName, jobId);
             containerService.stopContainer(containerName, false);
             containerService.removeContainer(containerName, false);
             throw e;
@@ -180,22 +180,20 @@ public class JobServiceImpl implements JobService {
     public void shutdown() {
         try {
             List<ContainerizedJob> containerizedJobs = containerizedJobsPool.getContainerizedJobs();
-            LOGGER.info("{} shutdown: removing containers for containerized jobs: {}",
-                    JobServiceImpl.class.getSimpleName(), containerizedJobs);
+            LOGGER.info("Shutdown: removing containers for containerized jobs: {}", containerizedJobs);
 
             for (ContainerizedJob containerizedJob : containerizedJobs) {
                 String containerId = containerizedJob.getContainerId();
                 if (containerId != null) {
                     containerService.stopContainer(containerId, false);
                     containerService.removeContainer(containerId, false);
+                    LOGGER.info("Removed container {}", containerId);
                 }
             }
 
-            LOGGER.info("{} shutdown: finished removing containers for containerized jobs",
-                    JobServiceImpl.class.getSimpleName());
+            LOGGER.info("Shutdown: finished removing containers for containerized jobs");
         } catch (RuntimeException e) {
-            LOGGER.error("{} shutdown: failed to remove containers for containerized jobs",
-                    JobServiceImpl.class.getSimpleName(), e);
+            LOGGER.error("Shutdown: failed to remove containers for containerized jobs", e);
             throw e;
         }
     }
