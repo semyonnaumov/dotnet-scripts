@@ -47,8 +47,8 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
 
   postgres:
-    container_name: ds-postgres
     image: postgres:15.2
+    container_name: ds-postgres
     networks:
       - ds-network
     environment:
@@ -60,8 +60,8 @@ services:
     restart: unless-stopped
 
   scheduler:
-    container_name: ds-scheduler
     image: semyonnaumov/dotnet-scripts-scheduler:latest
+    container_name: ds-scheduler
     ports:
       - "8080:8080"
     networks:
@@ -75,8 +75,8 @@ services:
       - kafka-broker-2
 
   worker:
-    container_name: ds-worker
     image: semyonnaumov/dotnet-scripts-worker:dind
+    container_name: ds-worker
     privileged: true
     networks:
       - ds-network
